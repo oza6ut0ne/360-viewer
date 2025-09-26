@@ -1,0 +1,156 @@
+<!doctype html>
+<html>
+
+<head>
+  <title>360 Panorama Viewer</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- A-Frame 1.7.0 -->
+  <script src="aframe.min.js"></script>
+  <style>
+    .invisible {
+      display: none;
+    }
+  </style>
+</head>
+
+<body ondrop="onDrop(event);" ondragover="event.preventDefault();">
+  <input id="button" type="file" accept="image/*, video/*" onchange="onInputChange(this);" />
+  <a-scene id="scene" class="invisible" onwheel="onWheel(event);" onpointerdown="onPointerDown(event);"
+    onpointermove="onPointerMove(event);" onpointerup="onPointerUp(event);" onpointercancel="onPointerUp(event);"
+    onpointerout="onPointerUp(event);" onpointerleave="onPointerUp(event);">
+    <a-assets>
+      <img id="image" />
+      <video id="video" autoplay loop="true" playsinline></video>
+    </a-assets>
+
+    <a-sky id="sky" src="#image" rotation="0 270 0" visible="false"></a-sky>
+    <a-videosphere id="videosphere" src="#video" rotation="0 270 0" visible="false"></a-videosphere>
+    <a-entity id="camera" camera look-controls wasd-controls="acceleration:0" position="0 0 0"></a-entity>
+  </a-scene>
+
+  <script>
+    function setVisible(id, visible) {
+      const element = document.getElementById(id);
+      element.object3D.visible = visible;
+    }
+
+    function showFile(file) {
+      let fileReader = new FileReader();
+      if (file.type.startsWith("image/")) {
+        fileReader.onload = () => {
+          document.getElementById("image").src = fileReader.result;
+          const sky = document.getElementById("sky");
+          sky.setAttribute("src", "");
+          setTimeout(() => {
+            sky.setAttribute("src", "#image");
+          }, 1);
+
+          document.getElementById("video").pause();
+          setVisible("sky", true);
+          setVisible("videosphere", false);
+        };
+      } else if (file.type.startsWith("video/")) {
+        fileReader.onload = () => {
+          document.getElementById("video").src = fileReader.result;
+          const videosphere = document.getElementById("videosphere");
+          videosphere.setAttribute("src", "");
+          setTimeout(() => {
+            videosphere.setAttribute("src", "#video");
+          }, 1);
+
+          document.getElementById("video").play();
+          setVisible("sky", false);
+          setVisible("videosphere", true);
+        };
+      } else {
+        return;
+      }
+      fileReader.readAsDataURL(file);
+      document.getElementById("button").classList.add('invisible');
+      document.getElementById("scene").classList.remove('invisible');
+    }
+
+    function onInputChange(obj) {
+      if (obj.files.length === 0) {
+        return
+      }
+      showFile(obj.files[0]);
+    }
+
+    function onDrop(event) {
+      event.preventDefault();
+      if (event.dataTransfer.files.length === 0) {
+        return;
+      }
+
+      const file = event.dataTransfer.files[0];
+      showFile(file);
+    }
+
+    function onWheel(event) {
+      const delta = event.wheelDeltaY / 120 / 10;
+      const cameraElement = document.getElementById("camera");
+      const camera = cameraElement.getAttribute("camera");
+      camera.zoom += delta;
+      if (camera.zoom < 0.5) {
+        camera.zoom = 0.5;
+      } else if (camera.zoom > 10) {
+        camera.zoom = 10;
+      }
+      cameraElement.setAttribute("camera", camera);
+    }
+
+    const evCache = [];
+    let prevDelta = -1;
+    function onPointerDown(event) {
+      evCache.push(event);
+    }
+
+    function onPointerMove(event) {
+      const index = evCache.findIndex(
+        (cachedEv) => cachedEv.pointerId === event.pointerId,
+      );
+      evCache[index] = event;
+
+      if (evCache.length === 2) {
+        const curDelta = Math.hypot(
+          evCache[0].clientX - evCache[1].clientX,
+          evCache[0].clientY - evCache[1].clientY,
+        );
+
+        if (prevDelta > 0) {
+          const cameraElement = document.getElementById("camera");
+          const camera = cameraElement.getAttribute("camera");
+          if (curDelta > prevDelta) {
+            camera.zoom += 0.01;
+          }
+          if (curDelta < prevDelta) {
+            camera.zoom -= 0.01;
+          }
+          if (camera.zoom < 0.5) {
+            camera.zoom = 0.5;
+          } else if (camera.zoom > 10) {
+            camera.zoom = 10;
+          }
+          cameraElement.setAttribute("camera", camera);
+        }
+
+        prevDelta = curDelta;
+      }
+    }
+
+    function onPointerUp(event) {
+      const index = evCache.findIndex(
+        (cachedEv) => cachedEv.pointerId === event.pointerId,
+      );
+      evCache.splice(index, 1);
+
+      if (evCache.length < 2) {
+        prevDelta = -1;
+      }
+    }
+  </script>
+</body>
+
+</html>
