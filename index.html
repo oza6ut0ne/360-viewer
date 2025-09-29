@@ -15,8 +15,8 @@
 </head>
 
 <body ondrop="onDrop(event);" ondragover="event.preventDefault();">
-  <input id="button" type="file" accept="image/*, video/*" onchange="onInputChange(this);" />
-  <a-scene id="scene" class="invisible" onwheel="onWheel(event);" onpointerdown="onPointerDown(event);"
+  <input id="button" class="invisible" type="file" accept="image/*, video/*" onchange="onInputChange(this);" />
+  <a-scene id="scene" onwheel="onWheel(event);" onpointerdown="onPointerDown(event);"
     onpointermove="onPointerMove(event);" onpointerup="onPointerUp(event);" onpointercancel="onPointerUp(event);"
     onpointerout="onPointerUp(event);" onpointerleave="onPointerUp(event);">
     <a-assets>
@@ -30,6 +30,16 @@
   </a-scene>
 
   <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const scene = document.getElementById("scene");
+      scene.addEventListener("loaded", onLoad);
+    });
+
+    function onLoad(event) {
+      document.getElementById("scene").classList.add('invisible');
+      document.getElementById("button").classList.remove('invisible');
+    }
+
     function setVisible(id, visible) {
       const element = document.getElementById(id);
       element.object3D.visible = visible;
@@ -81,6 +91,10 @@
     function onDrop(event) {
       event.preventDefault();
       if (event.dataTransfer.files.length === 0) {
+        return;
+      }
+
+      if (!document.getElementById("scene").hasLoaded) {
         return;
       }
 
