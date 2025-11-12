@@ -24,7 +24,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-	port := flag.Uint("port", 3000, "Listen port")
+	port := flag.Uint("port", 3600, "Listen port")
 	addr := flag.String("addr", "", "Bind address")
 	certFile := flag.String("cert", "", "Server certificate for HTTPS")
 	keyFile := flag.String("key", "", "Server key for HTTPS")
